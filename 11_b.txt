@@ -1,0 +1,71 @@
+/* PROGRAM.L */
+
+%{
+#include "y.tab.h"
+#include <ctype.h>
+%}
+
+%%
+[a-z]   { yylval.c = yytext[0]; return LOWER; }
+[A-Z]   { yylval.c = yytext[0]; return UPPER; }
+\n      { return EOL; }
+.       { yylval.c = yytext[0]; return OTHER; }
+%%
+
+/*--------------------------------------------------------------*/
+
+/* PROGRAM.Y */
+
+%{
+#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>  // For exit()
+
+int yylex(void);
+void yyerror(const char *s);
+%}
+
+%union {
+    char c;  // Semantic value type for characters
+}
+
+%token <c> LOWER
+%token <c> UPPER
+%token <c> OTHER
+%token EOL
+
+%%
+
+// Process only one line and exit
+input: line EOL { 
+    exit(0);  // Exit after processing one line
+}
+;
+
+line: /* empty */
+    | line char
+    ;
+
+char: LOWER { printf("%c", toupper($1)); }
+    | UPPER { printf("%c", tolower($1)); }
+    | OTHER { printf("%c", $1); }
+    ;
+
+%%
+
+void yyerror(const char *s) {
+    fprintf(stderr, "Error: %s\n", s);
+}
+
+int main() {
+    printf("Enter text (press Enter to convert): ");
+    yyparse();
+    return 0;
+}
+
+/*
+yacc -d program.y
+lex program.l
+cc y.tab.c lex.yy.c -ll
+./a.out
+*/
